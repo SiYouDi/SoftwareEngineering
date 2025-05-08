@@ -1,0 +1,15 @@
+{
+    "restartable": "rs",
+    "verbose": true,
+    "watch": [
+        "./",
+        "src/"
+    ],
+    "ignore": [
+        "node_modules",
+        "dist"
+    ],
+    "delay": "500",
+    "exec": "cls&node -r ts-node/register ./index.ts",
+    "ext": "ts json"
+}
