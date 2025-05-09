@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户登录</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <script src="utils.js"></script>
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(to right, #4facfe, #00f2fe);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .login-container {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-container h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    .form-group input:focus {
+      border-color: #4facfe;
+      outline: none;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 10px 12px;
+      background: #4facfe;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .btn:hover {
+      background: #00c6ff;
+    }
+
+    .bottom-link {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .bottom-link a {
+      color: #4facfe;
+      text-decoration: none;
+    }
+
+    .bottom-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2>登录账号</h2>
+    <div class="form-group">
+      <input type="text" id="account" placeholder="请输入账号">
+    </div>
+    <div class="form-group">
+      <input type="password" id="password" placeholder="请输入密码">
+    </div>
+    <button class="btn" onclick="login()">登录</button>
+    <div class="bottom-link">
+      还没有账号？<a href="register.html">点击注册</a>
+    </div>
+  </div>
+
+  <script>
+    async function login() {
+      const account = document.getElementById("account").value;
+      const password = document.getElementById("password").value;
+
+      if (!account || !password) {
+        alert("账号和密码不能为空");
+        return;
+      }
+
+      const res = await request("/login", "POST", { account, password });
+      if (res.success) {
+        localStorage.setItem("token", res.data.token);
+        alert("登录成功！");
+        window.location.href = "test.html";  // 登录后跳转聊天页
+      } else {
+        alert("登录失败：" + res.message);
+      }
+    }
+  </script>
+</body>
+</html>
