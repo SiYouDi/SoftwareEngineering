@@ -1,7 +1,9 @@
-<!DOCTYPE html>
-<html>
+<!-- <!DOCTYPE html>
+<html lang="zh-CN">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Socket.IO Chat Test</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
@@ -46,7 +48,7 @@
             color: #666;
             font-style: italic;
         }
-    </style>
+    </style> 
 </head>
 
 <body>
@@ -67,7 +69,11 @@
 
     <script>
         // 替换为你的有效JWT令牌（可以从/login接口获取）
-        const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50IjoiYWNjb3VudHMiLCJpZCI6MywiaWF0IjoxNzQ2NzAzNDEzLCJleHAiOjE3NDY3ODk4MTN9.SvkSF1ViQNjQuMCJqNVtABFudmSfwH5hk_Mq5jQh4rI";
+        const token = localStorage.getItem("token");
+        if (!token) {
+            alert("请先登录！");
+            window.location.href = "login.html";
+        }
 
         // 初始化Socket.IO连接
         const socket = io("http://localhost:3000", {
@@ -137,7 +143,12 @@
 
         async function loadHistory() {
                 const roomId = document.getElementById('roomId').value.trim();
-                const response = await fetch(`http://localhost:3000/messages/${roomId}`);
+                // const response = await fetch(`http://localhost:3000/messages/${roomId}`);
+                const response = await fetch(`http://localhost:3000/messages/${roomId}`, {
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    }
+                });
                 const data = await response.json();
 
                 if (data.success) {
@@ -149,6 +160,220 @@
                 }
             }
     </script>
+</body>
+
+</html> -->
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>聊天室</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(to right, #4facfe, #00f2fe);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .chat-container {
+      background: white;
+      padding: 30px 20px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 600px;
+      height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .controls input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .controls button {
+      padding: 10px 15px;
+      background: #4facfe;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #f9f9f9;
+    }
+
+    .message {
+      margin-bottom: 8px;
+    }
+
+    .info {
+      color: #666;
+      font-style: italic;
+    }
+
+    #messageForm {
+      display: flex;
+    }
+
+    #content {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    #messageForm button {
+      margin-left: 10px;
+      padding: 10px 20px;
+      background: #4facfe;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #messageForm button:hover,
+    .controls button:hover {
+      background: #00c6ff;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="chat-container">
+    <h1>聊天室</h1>
+    <div class="controls">
+      <input type="text" id="roomId" placeholder="房间 ID（默认 general）" value="general" />
+      <button onclick="joinRoom()">加入房间</button>
+      <button onclick="loadHistory()">加载历史</button>
+    </div>
+
+    <div id="messages"></div>
+
+    <form id="messageForm" onsubmit="sendMessage(event)">
+      <input type="text" id="content" placeholder="输入消息..." required />
+      <button type="submit">发送</button>
+    </form>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("请先登录！");
+      window.location.href = "login.html";
+    }
+
+    const socket = io("http://localhost:3000", {
+      path: "/chat/socket.io",
+      auth: { token }
+    });
+
+    const messagesDiv = document.getElementById('messages');
+    const roomIdInput = document.getElementById('roomId');
+    const contentInput = document.getElementById('content');
+
+    socket.on("connect", () => {
+      logMessage(`✅ 成功连接服务器（ID: ${socket.id}）`, true);
+    });
+
+    socket.on("error", (err) => {
+      logMessage(`❌ 错误：${err.message}`, true);
+    });
+
+    function joinRoom() {
+      const roomId = roomIdInput.value.trim();
+      if (roomId) {
+        socket.emit("join_room", roomId);
+        logMessage(`📥 加入房间：${roomId}`, false, true);
+      }
+    }
+
+    function sendMessage(event) {
+      event.preventDefault();
+      const roomId = roomIdInput.value.trim();
+      const content = contentInput.value.trim();
+
+      if (roomId && content) {
+        socket.emit("send_message", { roomId, content });
+        contentInput.value = '';
+      }
+    }
+
+    socket.on("receive_message", (data) => {
+      logMessage(`${data.account}: ${data.content}`);
+    });
+
+    socket.on("user_joined", (data) => {
+      logMessage(`👤 ${data.account} 加入了房间`, false, true);
+    });
+
+    socket.on("chat_error", (error) => {
+      logMessage(`❗ 错误: ${error}`, true);
+    });
+
+    async function loadHistory() {
+      const roomId = roomIdInput.value.trim();
+      const response = await fetch(`http://localhost:3000/messages/${roomId}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        data.data.forEach(msg => {
+          logMessage(`${msg.account} (历史): ${msg.content}`);
+        });
+      } else {
+        logMessage(`❌ 加载失败：${data.message}`, true);
+      }
+    }
+
+    function logMessage(message, isError = false, isInfo = false) {
+      const messageElement = document.createElement('div');
+      messageElement.className = isError ? 'message error' :
+        isInfo ? 'message info' : 'message';
+      messageElement.textContent = message;
+      messagesDiv.appendChild(messageElement);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+  </script>
 </body>
 
 </html>
