@@ -30,12 +30,13 @@ const login = async (ctx: context) => {
     const password = createHash("md5")
       .update(`${query.password}${user.dataValues.nonce}`)
       .digest("hex");
-    if (password != query.password) {
+    if (password != user.dataValues.password) {
       ctx.response.body = {
         success: false,
         message: "密码错误",
         data: {},
       };
+      return;
     }
     const token = jwt.sign(
       {
