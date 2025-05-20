@@ -13,6 +13,7 @@ const login = async (ctx: context) => {
         message: "参数错误",
         data: [],
       };
+      return;
     }
     const user = await User.findOne({
       where: {
